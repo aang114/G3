@@ -154,27 +154,47 @@ struct GCNIterationLoop
             []__host__ __device__(ValueT &dst, ValueT &src) {
           dst = src;
         }, in_feature.GetSize(), util::DEVICE))
-        GUARD_CU(truth.ForAll([label, split]__host__ __device__(int *t, SizeT &i) {
-          t[i] = split[i] == 1 ? label[i] : -1;
-        }))
 
-        for (auto m : modules) {
-          m->forward(false);
+        for (int j = 0; j < truth.length; j++) {
+
+          GUARD_CU(truth.ForAll([j, label, split]__host__ __device__(int *t, SizeT &i) {
+            //t[i] = split[i] == 1 ? label[i] : -1;
+
+            if (i == j) {
+              t[i] = label[i]
+            } else {
+              t[i] = -1
+            }
+
+          }))
+
+          for (auto m : modules) {
+            m->forward(false);
+          }
+          get_loss_acc(data_slice, pair);
+
+          printf("label: %lf, loss: %lf, acc: %lf", j, pair.first, pair.second);
+
+          //printf("test_loss: %lf, test_acc: %lf, avg_train_time: %fms\n",
+          //       pair.first, pair.second, data_slice.tot_time / data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.fw_sprmul, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.bw_sprmul, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.fw_graphsum, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.bw_graphsum, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.fw_dropout, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.bw_dropout, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.fw_relu, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.bw_relu, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.fw_matmul, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.bw_matmul, data_slice.max_iter);
+          PRINT_TIMER_AVERAGE(data_slice.fw_loss, data_slice.max_iter);
+
+
+
         }
-        get_loss_acc(data_slice, pair);
-        printf("test_loss: %lf, test_acc: %lf, avg_train_time: %fms\n",
-            pair.first, pair.second, data_slice.tot_time / data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.fw_sprmul, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.bw_sprmul, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.fw_graphsum, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.bw_graphsum, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.fw_dropout, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.bw_dropout, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.fw_relu, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.bw_relu, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.fw_matmul, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.bw_matmul, data_slice.max_iter);
-        PRINT_TIMER_AVERAGE(data_slice.fw_loss, data_slice.max_iter);
+
+
+
     }
     return retval;
   }
