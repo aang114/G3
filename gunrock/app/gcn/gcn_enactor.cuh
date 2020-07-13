@@ -85,6 +85,8 @@ struct GCNIterationLoop
     auto &in_feature = data_slice.in_feature;
     auto &timer = data_slice.timer;
 
+    auto &AAxw0w1 = data_slice.AAxw0w1;
+
     timer.Start();
 
     GUARD_CU (data_slice.x_val.ForEach(in_feature,
@@ -155,12 +157,16 @@ struct GCNIterationLoop
           dst = src;
         }, in_feature.GetSize(), util::DEVICE))
         GUARD_CU(truth.ForAll([label, split]__host__ __device__(int *t, SizeT &i) {
-          t[i] = split[i] == 1 ? label[i] : -1;
+          //t[i] = split[i] == 1 ? label[i] : -1;
+          t[i] = label[i];
         }))
 
         for (auto m : modules) {
           m->forward(false);
         }
+
+        AAxw0w1.Print();
+
         get_loss_acc(data_slice, pair);
         printf("test_loss: %lf, test_acc: %lf, avg_train_time: %fms\n",
             pair.first, pair.second, data_slice.tot_time / data_slice.max_iter);
